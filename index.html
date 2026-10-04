@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BodyTrack</title>
+  
+  <!-- Insertion de Chart.js pour les graphiques -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #121214;
+      --surface-bright: #1c1c21;
+      --primary: #d0bcff;
+      --on-primary: #381e72;
+      --primary-container: #4f378b;
+      --on-primary-container: #eaddff;
+      --text: #e6e1e5;
+      --text-sec: #949099;
+      --accent: #ffb4ab;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 80px;
+      box-sizing: border-box;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-weight: 700;
+      margin: 0 0 4px 0;
+      font-size: 1.6rem;
+      background: linear-gradient(45deg, #d0bcff, #efb8c8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-sec);
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    h3 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1rem;
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--text-sec);
+    }
+
+    input {
+      background: var(--surface-bright);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    button {
+      background: var(--primary);
+      color: var(--on-primary);
+      border: none;
+      padding: 12px;
+      border-radius: 100px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 200px !important;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>BodyTrack</h1>
+    <p class="subtitle">Suivi des mesures et séances</p>
+  </header>
+
+  <!-- Formulaire de saisie -->
+  <div class="card">
+    <h3>Nouvelle entrée</h3>
+    <div class="form-group">
+      <label for="weightInput">Poids (kg)</label>
+      <input type="number" id="weightInput" step="0.1" placeholder="Ex: 72.5">
+    </div>
+    <button onclick="addEntry()">Enregistrer</button>
+  </div>
+
+  <!-- Graphique -->
+  <div class="card">
+    <h3>Évolution</h3>
+    <canvas id="trackChart"></canvas>
+  </div>
+
+  <!-- Historique -->
+  <div class="card">
+    <h3>Historique</h3>
+    <ul class="history-list" id="historyList">
+      <!-- Les entrées s'afficheront ici -->
+    </ul>
+  </div>
+
+  <script>
+    // Initialisation des données locales
+    let entries = JSON.parse(localStorage.getItem('bodytrack_data')) || [];
+
+    // Configuration Chart.js
+    const ctx = document.getElementById('trackChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: entries.map(e => e.date),
+        datasets: [{
+          label: 'Poids (kg)',
+          data: entries.map(e => e.weight),
+          borderColor: '#d0bcff',
+          backgroundColor: 'rgba(208, 188, 255, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#949099' }, grid: { display: false } },
+          y: { ticks: { color: '#949099' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+
+    function updateUI() {
+      // Mise à jour du graphique
+      chart.data.labels = entries.map(e => e.date);
+      chart.data.datasets[0].data = entries.map(e => e.weight);
+      chart.update();
+
+      // Mise à jour de l'historique
+      const list = document.getElementById('historyList');
+      list.innerHTML = entries.slice().reverse().map(e => `
+        <li class="history-item">
+          <span>${e.date}</span>
+          <strong>${e.weight} kg</strong>
+        </li>
+      `).join('');
+    }
+
+    function addEntry() {
+      const input = document.getElementById('weightInput');
+      const val = parseFloat(input.value);
+      if (!val) return;
+
+      const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      entries.push({ date: dateStr, weight: val });
+
+      // Sauvegarde locale
+      localStorage.setItem('bodytrack_data', JSON.stringify(entries));
+
+      input.value = '';
+      updateUI();
+    }
+
+    // Chargement initial
+    updateUI();
+  </script>
+</body>
+</html>
