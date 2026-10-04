@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#f2f5f9">
     <title>BodyTrack</title>
     
+    <!-- Typographie Moderne -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -137,7 +138,6 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-light)); 
             color: #fff; padding: 18px; width: 100%; margin-top: 20px; border-radius: 100px; 
             font-weight: 600; font-size: 1.1rem; border: none; box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
-            cursor: pointer;
         }
 
         .history-list { display: flex; flex-direction: column; gap: 16px; }
@@ -164,8 +164,7 @@
             border-radius: var(--radius-md); font-size:0.95rem; border:1px solid var(--border-color); 
             font-weight:600; font-family: 'Outfit'; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
         }
-        .import-btn { background: linear-gradient(135deg, #2a9d8f, #264653); color: white; border: none; }
-        .export-btn { background: linear-gradient(135deg, #4361ee, #3f37c9); color: white; border: none; }
+        .cloud-btn { background: linear-gradient(135deg, #4285f4, #34a853); color: white; border: none; grid-column: 1 / -1; font-size: 1rem; }
         .health-btn { background: #ea4335; color: white; border: none; grid-column: 1 / -1; font-size: 1rem; }
         .notify-btn { background: #7209b7; color: white; border: none; grid-column: 1 / -1; font-size: 1rem; }
     </style>
@@ -192,7 +191,7 @@
                     <span id="goalCurrent" style="font-weight:700; color:var(--primary); font-size:1.1rem;">--</span>
                 </div>
                 <div class="progress-bar-bg"><div id="goalProgress" class="progress-bar-fill" style="width: 0%;"></div></div>
-                <div class="goal-text"><span id="goalStart">Départ: --%</span><span>Cible: 14%</span></div>
+                <div class="goal-text"><span id="goalStart">Départ: 16.8%</span><span>Cible: 14%</span></div>
                 <div id="forecastMessage" class="forecast-text">Analyse de la vélocité...</div>
             </div>
         </div>
@@ -263,27 +262,10 @@
         </div>
     </div>
 
-    <!-- ONGLET 3 : GESTION DES DONNÉES & RAPPELS -->
+    <!-- ONGLET 3 : HISTORIQUE, NOTIFICATIONS & PARAMÈTRES -->
     <div id="tab-hist" class="tab-content">
-        <h2>📂 Gestion des Données</h2>
-        
-        <div class="card">
-            <h3>Import & Export</h3>
-            <div class="tools-grid">
-                <button class="tool-btn import-btn" onclick="document.getElementById('fileInput').click()">
-                    <span>📥</span> Importer Data (JSON)
-                </button>
-                <button class="tool-btn export-btn" onclick="exportJSON()">
-                    <span>📤</span> Exporter Data (JSON)
-                </button>
-                <button class="tool-btn" style="grid-column: 1 / -1;" onclick="exportCSV()">
-                    <span>📊</span> Export Google Health (CSV)
-                </button>
-                <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importJSON(event)">
-            </div>
-        </div>
-
         <h2>🔔 Rappel Pesée Hebdomadaire</h2>
+        
         <div class="card">
             <h3>Configuration du Rappel</h3>
             <div class="form-grid">
@@ -317,10 +299,22 @@
                 <button class="tool-btn" onclick="downloadCalendarReminder()">
                     <span>📅</span> Ajouter au Google Calendar (.ics)
                 </button>
-                <button class="tool-btn health-btn" onclick="openGoogleHealth()">
-                    <span>❤️</span> Ouvrir Google Health / Fit
-                </button>
             </div>
+        </div>
+
+        <h2>⚙️ Cloud & Synchronisation</h2>
+        <div class="tools-grid">
+            <button class="tool-btn health-btn" onclick="openGoogleHealth()">
+                <span>❤️</span> Ouvrir Google Health / Fit
+            </button>
+            <button class="tool-btn cloud-btn" onclick="syncWithGoogleDrive()">
+                <span>☁️</span> Synchroniser Google Drive
+            </button>
+
+            <button class="tool-btn" onclick="exportCSV()"><span>📊</span> Export CSV</button>
+            <button class="tool-btn" onclick="exportJSON()"><span>💾</span> Backup JSON Local</button>
+            <button class="tool-btn" style="grid-column: 1/-1" onclick="document.getElementById('fileInput').click()"><span>📂</span> Restaurer fichier JSON</button>
+            <input type="file" id="fileInput" style="display:none" onchange="importJSON(event)">
         </div>
 
         <div style="margin-top:24px;">
@@ -350,8 +344,16 @@
         const targetFat = 14.0;
         Chart.defaults.font.family = "'Outfit', sans-serif";
 
-        // Chargement dynamique sans aucune donnée inscrite en dur
-        let data = JSON.parse(localStorage.getItem('bodyTrackData')) || [];
+        const defaultData = [
+            { date: "Start (Juil)", weight: 79.0, cal: 1799, bmi: 23.3, f: 16.8, w: 63.3, m: 40.9, b: 3.4 },
+            { date: "W1 (29 août)", weight: 78.0, cal: 1795, bmi: 23.2, f: 16.8, w: 63.4, m: 41.0, b: 3.4 },
+            { date: "W2 (9 sept)", weight: 77.5, cal: 1782, bmi: 22.9, f: 16.3, w: 63.7, m: 41.2, b: 3.3 },
+            { date: "W3 (13 sept)", weight: 77.3, cal: 1782, bmi: 22.9, f: 16.4, w: 63.7, m: 41.2, b: 3.3 },
+            { date: "W4 (16 sept)", weight: 77.0, cal: 1782, bmi: 22.9, f: 16.1, w: 63.9, m: 41.3, b: 3.3 },
+            { date: "W5 (27 sept)", weight: 76.3, cal: 1764, bmi: 22.5, f: 15.8, w: 64.1, m: 41.5, b: 3.3 }
+        ];
+
+        let data = JSON.parse(localStorage.getItem('bodyTrackData')) || defaultData;
         let chartFat, chartMuscle, chartWeight, chartMassKg;
 
         const months = ["jan", "fév", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
@@ -403,7 +405,7 @@
             Notification.requestPermission().then(permission => {
                 if (permission === "granted") {
                     new Notification("⚡ BodyTrack", {
-                        body: "Rappel configuré ! Tu recevras une notification pour ta pesée.",
+                        body: "Rappel configuré ! Tu recevras une notification chaque dimanche matin pour ta pesée.",
                         icon: "https://cdn-icons-png.flaticon.com/512/3004/3004031.png"
                     });
                 } else { alert("Autorisation de notification refusée."); }
@@ -424,8 +426,8 @@ BEGIN:VEVENT
 SUMMARY:⚡ Pesée BodyTrack
 DESCRIPTION:C'est l'heure de ta pesée hebdomadaire ! Ouvre BodyTrack pour enregistrer tes données.
 RRULE:FREQ=WEEKLY;BYDAY=${rruleDay}
-DTSTART:20261004T${selectedTime}
-DTEND:20261004T${selectedTime}
+DTSTART:20260927T${selectedTime}
+DTEND:20260927T${selectedTime}
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Pesée BodyTrack
@@ -435,7 +437,7 @@ END:VEVENT
 END:VCALENDAR`;
 
             const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8;" });
-            downloadBlob(blob, "bodytrack_rappel.ics");
+            downloadBlob(blob, "bodytrack_rappel_dimanche.ics");
         }
 
         function openGoogleHealth() {
@@ -443,37 +445,27 @@ END:VCALENDAR`;
             setTimeout(() => { window.open("https://fit.google.com", "_blank"); }, 1000);
         }
 
-        function updateForecastAndGoal() {
-            if(data.length === 0) {
-                document.getElementById('coachMessage').innerText = "Aucune donnée enregistrée. Importe ton fichier JSON ou commence une première pesée ! 📥";
-                document.getElementById('summaryBox').innerHTML = `<span>Pas de données</span>`;
-                document.getElementById('goalStart').innerText = "Départ: --%";
-                document.getElementById('goalCurrent').innerText = "--";
-                document.getElementById('goalProgress').style.width = "0%";
-                document.getElementById('forecastMessage').innerText = "--";
-                return;
-            }
+        function syncWithGoogleDrive() {
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            if (navigator.share) {
+                const file = new File([blob], `bodytrack_backup.json`, { type: "application/json" });
+                navigator.share({ title: "Sauvegarde BodyTrack", files: [file] }).catch(() => exportJSON());
+            } else { exportJSON(); }
+        }
 
+        function updateForecastAndGoal() {
+            if(data.length < 2) return;
             const start = data[0];
             const last = data[data.length - 1];
-            const prev = data.length > 1 ? data[data.length - 2] : last;
+            const prev = data[data.length - 2];
             
-            document.getElementById('goalStart').innerText = `Départ: ${start.f}%`;
-
             let msg = "";
-            if(data.length === 1) {
-                msg = "Première pesée enregistrée ! Continue pour voir la progression. 🚀";
-            } else if(last.f < prev.f && last.m > prev.m) {
-                msg = "Excellente semaine ! Perte de gras et gain musculaire validés. 💪🔥";
-            } else if (last.f < prev.f) {
-                msg = "Super, le gras continue de fondre ! Reste focus. 📉";
-            } else if (last.weight === prev.weight && last.w < prev.w) {
-                msg = "Poids stable, mais perte d'eau. Hydrate-toi bien ! 💧";
-            } else if (last.m > prev.m) {
-                msg = "Belle prise de masse ! Tes entraînements paient. 🏋️‍♂️";
-            } else {
-                msg = "Phase de stabilisation. La constance est la clé des résultats ! ⚖️";
-            }
+            if(last.f < prev.f && last.m > prev.m) msg = "Excellente semaine ! Perte de gras et gain musculaire validés. 💪🔥";
+            else if (last.f < prev.f) msg = "Super, le gras continue de fondre ! Reste focus. 📉";
+            else if (last.weight === prev.weight && last.w < prev.w) msg = "Poids stable, mais perte d'eau. Hydrate-toi bien ! 💧";
+            else if (last.m > prev.m) msg = "Belle prise de masse ! Tes entraînements de street workout paient. 🏋️‍♂️";
+            else msg = "Phase de stabilisation. La constance est la clé des résultats ! ⚖️";
             document.getElementById('coachMessage').innerText = msg;
 
             document.getElementById('goalCurrent').innerText = `${last.f}%`;
@@ -503,7 +495,7 @@ END:VCALENDAR`;
                     document.getElementById('forecastMessage').innerHTML = `Objectif 14% estimé vers le <strong>${targetDate.getDate()} ${months[targetDate.getMonth()]}</strong>.`;
                 }
             } else {
-                document.getElementById('forecastMessage').innerHTML = "Données en cours d'analyse...";
+                document.getElementById('forecastMessage').innerHTML = "Données en cours de calcul...";
             }
 
             const diffFatKg = (getKg(last.weight, last.f) - getKg(start.weight, start.f)).toFixed(1);
@@ -529,11 +521,6 @@ END:VCALENDAR`;
             const container = document.getElementById('historyContainer');
             container.innerHTML = '';
             
-            if(data.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Aucun historique disponible.</p>`;
-                return;
-            }
-
             [...data].reverse().forEach((row, reversedIndex) => {
                 const i = data.length - 1 - reversedIndex;
                 const prev = i > 0 ? data[i-1] : null;
@@ -609,8 +596,7 @@ END:VCALENDAR`;
                         y: { 
                             ticks: { font: {family: "'Outfit'"}, color: '#8d99ae', maxTicksLimit: 5 }, 
                             grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', borderDash: [5, 5] },
-                            suggestedMin: dataArr.length ? Math.min(...dataArr) - 0.2 : 0,
-                            suggestedMax: dataArr.length ? Math.max(...dataArr) + 0.2 : 100
+                            suggestedMin: Math.min(...dataArr) - 0.2, suggestedMax: Math.max(...dataArr) + 0.2
                         }
                     },
                     interaction: { mode: 'index', intersect: false }
@@ -619,7 +605,6 @@ END:VCALENDAR`;
         }
 
         function updateCharts() {
-            if(data.length === 0) return;
             chartFat = createGradientChart('chartFat', chartFat, 'Gras (%)', data.map(d => d.f), '#f72585');
             chartMuscle = createGradientChart('chartMuscle', chartMuscle, 'Muscle (%)', data.map(d => d.m), '#4cc9f0');
             chartWeight = createGradientChart('chartWeight', chartWeight, 'Poids (kg)', data.map(d => d.weight), '#4361ee');
@@ -689,13 +674,11 @@ END:VCALENDAR`;
         }
 
         function exportJSON() {
-            if(data.length === 0) { alert("Aucune donnée à exporter."); return; }
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            downloadBlob(blob, `bodytrack_data_${getFormattedDate()}.json`);
+            const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+            downloadBlob(blob, `bodytrack_backup_${getFormattedDate()}.json`);
         }
 
         function exportCSV() {
-            if(data.length === 0) { alert("Aucune donnée à exporter."); return; }
             let csvContent = "Date,Weight(kg),BodyFat(%),Muscle(%),Water(%),BMI,Calories\r\n";
             data.forEach(row => {
                 csvContent += `${row.date.split(" (")[0]},${row.weight},${row.f},${row.m},${row.w},${row.bmi},${row.cal}\r\n`;
@@ -713,9 +696,9 @@ END:VCALENDAR`;
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported) && imported.length > 0) {
                         data = imported; saveData(); updateUI();
-                        alert("Données réimportées avec succès !");
-                    } else { alert("Format de fichier JSON invalide."); }
-                } catch (err) { alert("Erreur lors de la lecture du fichier JSON."); }
+                        alert("Données chargées avec succès !");
+                    }
+                } catch (err) { alert("Fichier invalide."); }
             };
             reader.readAsText(file);
             event.target.value = '';
